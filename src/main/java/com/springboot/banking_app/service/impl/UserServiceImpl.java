@@ -2,6 +2,7 @@ package com.springboot.banking_app.service.impl;
 
 import com.springboot.banking_app.dto.AccountInfo;
 import com.springboot.banking_app.dto.BankResponse;
+import com.springboot.banking_app.dto.EmailDetails;
 import com.springboot.banking_app.dto.UserRequest;
 import com.springboot.banking_app.entity.User;
 import com.springboot.banking_app.exception.UserAlreadyExistsException;
@@ -17,6 +18,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    EmailService emailService;
 
     @Override
     public BankResponse createAccount(UserRequest userRequest) {
@@ -37,7 +41,16 @@ public class UserServiceImpl implements UserService {
                 .phoneNumber(String.valueOf(userRequest.getPhoneNumber()))
                 .status("ACTIVE")
                 .build();
+
         User savedUser = userRepository.save(user);
+
+        EmailDetails emailDetails = EmailDetails.builder()
+                .recipient(savedUser.getEmail())
+                .subject("ACCOUNT CREATION")
+                .messageBody("Congratulations! Your Account Has been Successfully Created.\nYour Account Details: \n" +
+                        "Account Name: " + savedUser.getFirstName() + " " + savedUser.getLastName() + " " + "\nAccount Number: " + savedUser.getAccountNumber())
+                .build();
+        emailService.sendEmail(emailDetails);
 
         return new BankResponse().builder()
                 .responseMessage("Account created successfully.")
