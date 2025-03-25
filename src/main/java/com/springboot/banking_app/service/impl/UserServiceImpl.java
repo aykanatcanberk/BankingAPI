@@ -37,7 +37,6 @@ public class UserServiceImpl implements UserService {
                 .phoneNumber(String.valueOf(userRequest.getPhoneNumber()))
                 .status("ACTIVE")
                 .build();
-
         User savedUser = userRepository.save(user);
 
         return new BankResponse().builder()
