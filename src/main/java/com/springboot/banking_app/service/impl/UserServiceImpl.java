@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -42,6 +43,7 @@ public class UserServiceImpl implements UserService {
                 .email(userRequest.getEmail())
                 .phoneNumber(String.valueOf(userRequest.getPhoneNumber()))
                 .status("ACTIVE")
+                .createdAt(LocalDateTime.now())
                 .build();
 
         User savedUser = userRepository.save(user);
