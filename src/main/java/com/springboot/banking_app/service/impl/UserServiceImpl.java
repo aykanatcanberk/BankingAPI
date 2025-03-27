@@ -1,20 +1,35 @@
 package com.springboot.banking_app.service.impl;
 
+import com.springboot.banking_app.config.JwtTokenProvider;
 import com.springboot.banking_app.dto.*;
+import com.springboot.banking_app.entity.Role;
 import com.springboot.banking_app.entity.User;
 import com.springboot.banking_app.exception.AccountNotFoundException;
 import com.springboot.banking_app.exception.InsufficientBalanceException;
 import com.springboot.banking_app.exception.UserAlreadyExistsException;
 import com.springboot.banking_app.repository.UserRepository;
 import com.springboot.banking_app.utils.AccountUtils;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
+@AllArgsConstructor
 public class UserServiceImpl implements UserService {
+
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     @Autowired
     UserRepository userRepository;
@@ -24,6 +39,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     TransactionService transactionService;
+
+    @Autowired
+    AuthenticationManager authenticationManager;
 
     @Override
     public BankResponse createAccount(UserRequest userRequest) {
@@ -41,8 +59,10 @@ public class UserServiceImpl implements UserService {
                 .accountNumber(AccountUtils.gererateAccountNumber())
                 .accountBalance(BigDecimal.ZERO)
                 .email(userRequest.getEmail())
+                .password(passwordEncoder.encode(userRequest.getPassword()))
                 .phoneNumber(String.valueOf(userRequest.getPhoneNumber()))
                 .status("ACTIVE")
+                .role(Role.valueOf("ROLE_ADMIN"))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -64,6 +84,25 @@ public class UserServiceImpl implements UserService {
                         .accountName(savedUser.getFirstName() + " " + savedUser.getLastName())
                         .build())
                 .build();
+    }
+
+    public BankResponse login(LoginDto login){
+        Authentication authentication = null;
+        authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
+        );
+
+        EmailDetails loginAlert = EmailDetails.builder()
+                .subject("You are logged in.")
+                .recipient(login.getEmail())
+                .messageBody("You are logged into your account.Are you the one who logged in?")
+                .build();
+        emailService.sendEmail(loginAlert);
+
+        return BankResponse.builder()
+                .responseMessage(jwtTokenProvider.generateToken(authentication))
+                .build();
+
     }
 
     @Override

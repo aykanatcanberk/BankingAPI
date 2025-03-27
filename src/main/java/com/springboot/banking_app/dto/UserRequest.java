@@ -18,5 +18,6 @@ public class UserRequest {
     private String state ;
     private String accountNumber ;
     private String email;
+    private String password;
     private String phoneNumber;
 }
